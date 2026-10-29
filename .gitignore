@@ -1,0 +1,51 @@
+# Environment variables
+.env
+**/.env
+
+# Dependencies
+node_modules/
+**/node_modules/
+**/node_modules/**
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+local_expenses.db
+
+# Air and temporary build artifacts
+tmp/
+**/tmp/**
+bin/
+**/bin/**
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Android build outputs & Gradle
+.gradle/
+**/.gradle/
+**/.gradle/**
+build/
+**/build/
+**/build/**
+local.properties
+*.apk
+*.aab
+*.dex
+
+# IDE
+.idea/
+**/.idea/
+**/.idea/**
+.vscode/
+**/.vscode/**
+
+# Logs
+*.log
+
+# Sensitive/Chat
+*CHAT_CONVERSATION*
+.DS_Store

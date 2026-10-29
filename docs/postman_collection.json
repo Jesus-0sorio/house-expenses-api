@@ -1,0 +1,259 @@
+{
+	"info": {
+		"_postman_id": "893457a1-e40a-4a25-9bcf-12e09ff7bca0",
+		"name": "House Expenses & Personal Finance API",
+		"description": "Postman Collection for House Expenses API with DIAN microservice, inverse item splitting, roomie settlements, bank reconciliation, and mobile sync.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\",\n  \"name\": \"Jesus Osorio\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Households",
+			"item": [
+				{
+					"name": "Create Household",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Apartamento 302\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/households",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "households"]
+						}
+					}
+				},
+				{
+					"name": "Get Roomie Balance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/households/balance",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "households", "balance"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Invoices & DIAN",
+			"item": [
+				{
+					"name": "Consult DIAN QR",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"qr_url\": \"https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=fe0459c3817f54c86b36be9f390082f42a59a721c0ad52c7104b7f80874e4c9c1b3e8c9735d6bb36c3e72239d10e054a\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/dian-qr",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "dian-qr"]
+						}
+					}
+				},
+				{
+					"name": "Inverse Split Receipt Items",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"selected_items\": [\"d1234567-0000-0000-0000-000000000001\"],\n  \"selected_as\": \"PERSONAL\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/:id/split-inverse",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", ":id", "split-inverse"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "INVOICE_UUID"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Bank Reconciliation",
+			"item": [
+				{
+					"name": "Get Suspected Duplicates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reconciliation/duplicates",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reconciliation", "duplicates"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Personal Finance",
+			"item": [
+				{
+					"name": "Create Income",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 5000000.0,\n  \"type\": \"SALARY_REGULAR\",\n  \"description\": \"Salario Mensual\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/incomes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "incomes"]
+						}
+					}
+				},
+				{
+					"name": "Get Cash Flow Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/finance/cash-flow?year=2026&month=9",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "finance", "cash-flow"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2026"
+								},
+								{
+									"key": "month",
+									"value": "9"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Offline Sync",
+			"item": [
+				{
+					"name": "Batch Sync",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"client_sync_time\": \"2026-09-04T19:00:00Z\",\n  \"expenses\": [\n    {\n      \"client_id\": \"b52998a4-0000-0000-0000-000000000001\",\n      \"amount\": 35000,\n      \"category\": \"Groceries\",\n      \"description\": \"Mercado Express\"\n    }\n  ],\n  \"incomes\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sync",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sync"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "jwt_token",
+			"value": ""
+		}
+	]
+}

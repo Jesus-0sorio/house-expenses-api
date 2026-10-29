@@ -1,0 +1,586 @@
+openapi: 3.0.3
+info:
+  title: House Expenses & Personal Finance API
+  description: Hexagonal architecture backend for personal finance, Colombian DIAN electronic invoicing, inverse supermarket expense splitting, roomie balance settlements, and bank reconciliation.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Central Gateway API
+  - url: http://localhost:8081/api/v1
+    description: DIAN Scraping & PDF Microservice
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: secret123
+        name:
+          type: string
+          example: Jesus Osorio
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          example: secret123
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+            name:
+              type: string
+
+    CreateHouseholdRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: Apartamento 302
+
+    JoinHouseholdRequest:
+      type: object
+      required: [invite_code]
+      properties:
+        invite_code:
+          type: string
+          example: APT302-XYZ
+
+    HouseholdBalanceSummary:
+      type: object
+      properties:
+        household_id:
+          type: string
+          format: uuid
+        total_household:
+          type: number
+          example: 140000.0
+        balances:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              user_name:
+                type: string
+              total_paid:
+                type: number
+              expected_share:
+                type: number
+              net_balance:
+                type: number
+        settlement:
+          type: string
+          example: Bob le debe $30000.00 COP a Alice.
+
+    CreateExpenseRequest:
+      type: object
+      required: [amount, category, description]
+      properties:
+        amount:
+          type: number
+          example: 45000.0
+        date:
+          type: string
+          format: date-time
+        category:
+          type: string
+          example: Supermercado
+        description:
+          type: string
+          example: Compras D1
+        scope:
+          type: string
+          enum: [PERSONAL, HOUSEHOLD]
+          example: HOUSEHOLD
+        payment_status:
+          type: string
+          enum: [PAID, PENDING]
+          example: PAID
+
+    InverseSplitRequest:
+      type: object
+      required: [selected_items, selected_as]
+      properties:
+        selected_items:
+          type: array
+          items:
+            type: string
+            format: uuid
+        selected_as:
+          type: string
+          enum: [PERSONAL, HOUSEHOLD]
+          example: PERSONAL
+
+    DianQRRequest:
+      type: object
+      required: [qr_url]
+      properties:
+        qr_url:
+          type: string
+          example: https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=fe0459c381...
+        nit:
+          type: string
+          description: NIT del emisor o del receptor/adquirente (opcional, por defecto usa la cédula/NIT del perfil del usuario)
+          example: "890900608-9"
+
+    CreateIncomeRequest:
+      type: object
+      required: [amount, type]
+      properties:
+        amount:
+          type: number
+          example: 5000000.0
+        type:
+          type: string
+          enum: [SALARY_REGULAR, PRIMA, BONUS, FREELANCE]
+        date:
+          type: string
+          format: date-time
+        description:
+          type: string
+          example: Salario Quincenal
+
+    CreateDebtRequest:
+      type: object
+      required: [name, monthly_amount, due_day]
+      properties:
+        name:
+          type: string
+          example: Credito Vehiculo
+        monthly_amount:
+          type: number
+          example: 600000.0
+        due_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+          example: 15
+        remaining_installments:
+          type: integer
+          example: 36
+        scope:
+          type: string
+          enum: [PERSONAL, HOUSEHOLD]
+
+    CashFlowReport:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        total_income:
+          type: number
+        personal_expenses:
+          type: number
+        fixed_liabilities:
+          type: number
+        household_debt_share:
+          type: number
+        net_disposable:
+          type: number
+
+    SyncBatchRequest:
+      type: object
+      properties:
+        client_sync_time:
+          type: string
+          format: date-time
+        expenses:
+          type: array
+          items:
+            type: object
+            required: [client_id, amount, category, description]
+            properties:
+              client_id:
+                type: string
+              amount:
+                type: number
+              category:
+                type: string
+              description:
+                type: string
+              scope:
+                type: string
+                enum: [PERSONAL, HOUSEHOLD]
+        incomes:
+          type: array
+          items:
+            type: object
+            required: [client_id, amount, type]
+            properties:
+              client_id:
+                type: string
+              amount:
+                type: number
+              type:
+                type: string
+              description:
+                type: string
+
+paths:
+  /auth/register:
+    post:
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/oauth/{provider}/url:
+    get:
+      summary: Get OAuth consent URL
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, microsoft, github]
+      responses:
+        '200':
+          description: URL returned
+
+  /auth/oauth/{provider}/callback:
+    post:
+      summary: OAuth callback authorization code exchange
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: JWT token issued
+
+  /households:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Create new household space
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseholdRequest'
+      responses:
+        '201':
+          description: Household created
+
+  /households/join:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Join household via invitation code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinHouseholdRequest'
+      responses:
+        '200':
+          description: Joined household
+
+  /households/balance:
+    get:
+      security:
+        - BearerAuth: []
+      summary: Get roomie 50/50 balance debt settlement
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdBalanceSummary'
+
+  /expenses:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Create an expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequest'
+      responses:
+        '201':
+          description: Expense created
+    get:
+      security:
+        - BearerAuth: []
+      summary: List user expenses
+      responses:
+        '200':
+          description: Expense list
+
+  /invoices/dian-qr:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Consult DIAN invoice via QR code URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DianQRRequest'
+      responses:
+        '201':
+          description: Invoice parsed and saved
+
+  /invoices/upload-zip:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Upload DIAN .zip containing attached document UBL 2.1 XML
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Invoice saved from zip
+
+  /invoices/{id}/pdf:
+    get:
+      security:
+        - BearerAuth: []
+      summary: Download or stream official DIAN graphic representation PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PDF binary stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /invoices/{id}/split-inverse:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Inverse supermarket item splitting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InverseSplitRequest'
+      responses:
+        '200':
+          description: Split applied
+
+  /reconciliation/upload-statement:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Upload bank or credit card statement (CSV or Excel)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                bank_name:
+                  type: string
+                account_last_four:
+                  type: string
+      responses:
+        '201':
+          description: Statement uploaded and evaluated
+
+  /reconciliation/duplicates:
+    get:
+      security:
+        - BearerAuth: []
+      summary: Get suspected duplicate transactions
+      responses:
+        '200':
+          description: Suspected duplicate transactions
+
+  /reconciliation/link:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Manually link transaction charge to expense
+      responses:
+        '200':
+          description: Linked
+
+  /reconciliation/dismiss:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Dismiss duplicate alert
+      responses:
+        '200':
+          description: Dismissed
+
+  /incomes:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Register salary or extraordinary income
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncomeRequest'
+      responses:
+        '201':
+          description: Income registered
+    get:
+      security:
+        - BearerAuth: []
+      summary: List registered incomes
+      responses:
+        '200':
+          description: List of incomes
+
+  /finance/debts:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Register recurring debt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDebtRequest'
+      responses:
+        '201':
+          description: Debt registered
+    get:
+      security:
+        - BearerAuth: []
+      summary: List recurring debts
+      responses:
+        '200':
+          description: List of debts
+
+  /finance/cash-flow:
+    get:
+      security:
+        - BearerAuth: []
+      summary: Calculate monthly net disposable cash flow
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CashFlowReport'
+
+  /sync:
+    post:
+      security:
+        - BearerAuth: []
+      summary: Batch sync offline Android records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBatchRequest'
+      responses:
+        '201':
+          description: Batch processed
